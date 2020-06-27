@@ -1,0 +1,140 @@
+from tkinter import *
+import random
+import sys
+import os
+
+game_fast = False
+
+root = Tk()
+root.title('Pong 2020')
+root.geometry('1500x900')
+
+touch = 0
+w = 1300
+h = 800
+
+x = 400
+y = 795
+
+x2 = x+200
+y2 = y+10
+
+can = Canvas(root, width = w, height = h, bg = 'green')
+can.pack()
+
+randx = random.randint(1, 2)
+randy = random.randint(1, 2)
+ball = can.create_oval(x+75, h-500, x+125, h-550, fill = '#42f54e', outline = '#9dff00')
+if randx == 1:
+    dx = 2
+elif randx == 2:
+    dx = -2
+if randy == 1:
+    dy = 2
+elif randy == 2:
+    dy = -2
+
+def restart_program(event):
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+
+
+rec = can.create_rectangle(x, y, x2, y2, fill = 'black')
+
+start1 = can.create_rectangle(0,0,w+10,(h+10)/4, fill = '#fc6b03', outline = '')
+gametext = can.create_text(w/2, 50, fill = 'black', text = 'ACCELERATED PONG', font = 'Times 50')
+start2 = can.create_rectangle(0, (h+10)/4, w+10, (h+10)/2, fill = '#fc5a03', outline = '')
+start3 = can.create_rectangle(0, (h+10)/2, w+10, 3*(h+10)/4, fill = '#fc4a03', outline = '')
+start4 = can.create_rectangle(0, 3*(h+10)/4, w+10, (h+10), fill = '#fc3503', outline = '')
+sbutt1 = can.create_rectangle((w/2)-100, (h/2)-25, (w/2)+100, (h/2)+25, fill = '#0335ff', outline = '')
+stext1 = can.create_text((w/2), (h/2), fill = '#03c8ff', text = 'Speed Pong', font = 'Times 25')
+sbutt2 = can.create_rectangle((w/2)-100, (h/2)+100, (w/2)+100, (h/2)+50, fill = '#0335ff', outline = '')
+stext2 = can.create_text((w/2), (h/2)+75, fill = '#03c8ff', text = 'Pong 2.0', font = 'Times 25')
+
+def move_ball():
+    global dx, dy, touch, x2, x
+    x1, y1, x2, y2 = can.coords(ball)
+    rx1, ry1, rx2, ry2 = can.coords(rec)
+    if x1 <= 0 or x2 >= w:
+        dx = -dx
+    if y1 <= 0:
+        dy = -dy
+    elif y2 >= ry1:
+        center_x = (x1 + x2) // 2
+        if rx1 <= center_x <= rx2:
+            dy = -dy
+            touch += 1
+            if game_fast:
+                dx = dx + 0.5 if (dx > 0) else dx - 0.5
+                dy = dy + 0.5 if (dy > 0) else dy - 0.5
+            elif not game_fast and rx2 - rx1 > 70:
+                dx = -3 if dx < 0 else 3
+                dy = -3 if dy < 0 else 3
+                can.coords(rec, rx1+10, ry1, rx2-10, ry2)
+            if not game_fast and rx2 - rx1 < 70:
+                dx = dx + 0.5 if (dx > 0) else dx - 0.5
+                dy = dy + 0.5 if (dy > 0) else dy - 0.5
+
+    if y2 >= h:
+        can.delete(ball)
+        can.delete(rec)
+        end = can.create_text(w // 2, h // 2, fill='dark red', font='Times 75',
+                              text='Game Over\n  Score: ' + str(touch))
+        rbutt = can.create_rectangle((w // 2) - 50, ((h + 250) // 2) - 25, (w // 2) + 50, ((h + 250) // 2) + 25,
+                                     fill='blue', outline='')
+        rtext = can.create_text(w // 2, (h + 250) // 2, fill='dark red', font='Times 25', text='Restart?')
+        can.tag_bind(rbutt, '<Button-1>', restart_program)
+        can.tag_bind(rtext, '<Button-1>', restart_program)
+    can.move(ball, dx, dy)
+    root.after(10, move_ball)
+
+def left(event):
+    x1, y1, x2, y2 = can.coords(rec)
+    if x1 > 0:
+        x_change = min(x1, 10)
+        can.move(rec, -x_change, 0)
+def right(event):
+    x1, y1, x2, y2 = can.coords(rec)
+    if x < w:
+        x_change = min(w - x2, 10)
+        can.move(rec, x_change, 0)
+
+def startgame1(event):
+    global game_fast
+    can.delete(gametext)
+    can.delete(sbutt1)
+    can.delete(stext1)
+    can.delete(start1)
+    can.delete(start2)
+    can.delete(start3)
+    can.delete(start4)
+    can.delete(sbutt2)
+    can.delete(stext2)
+    root.bind('<Left>', left)
+    root.bind('<Right>', right)
+    game_fast = True
+    move_ball()
+def startgame2(event):
+    global game_fast
+    can.delete(gametext)
+    can.delete(sbutt1)
+    can.delete(stext1)
+    can.delete(start1)
+    can.delete(start2)
+    can.delete(start3)
+    can.delete(start4)
+    can.delete(sbutt2)
+    can.delete(stext2)
+    root.bind('<Left>', left)
+    root.bind('<Right>', right)
+    game_fast = False
+    move_ball()
+
+
+
+can.tag_bind(sbutt1, "<Button-1>", startgame1)
+can.tag_bind(stext1, "<Button-1>", startgame1)
+can.tag_bind(sbutt2, "<Button-1>", startgame2)
+can.tag_bind(stext2, "<Button-1>", startgame2)
+
+root.mainloop()
