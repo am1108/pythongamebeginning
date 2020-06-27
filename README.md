@@ -1,2 +1,2 @@
 # pythongames
-Starting python game code
+#Compilation of all games made in python
