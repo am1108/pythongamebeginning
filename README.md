@@ -1,2 +1,2 @@
-# pythongamebeginning
+# pythongames
 Starting python game code
