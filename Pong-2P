@@ -1,0 +1,150 @@
+from tkinter import *
+import random
+import sys
+import os
+
+def restart_program(event):
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+
+
+randx = random.randint(1,2)
+randy = random.randint(1,2)
+
+if randx == 1:
+    dx1 = 4
+    dx2 = -dx1
+else:
+    dx1 = -4
+    dx2 = -dx1
+if randy == 1:
+    dy1 = 4
+    dy2 = -dy1
+else:
+    dy1 = -4
+    dy2 = -dy1
+
+
+root = Tk()
+root.title('Game 2')
+root.geometry('1500x900')
+
+w = 1305
+h = 800
+
+can = Canvas(root, width = w, height = h, bg = '#0009b5')
+can.pack()
+
+border = can.create_rectangle((w-5)//2, 0, (w+5)//2, h, fill = 'black')
+rec2 = can.create_rectangle((w+5)//2, h//2 -100, (w+15)//2, h//2 +100, fill = 'green', outline = '')
+rec1 = can.create_rectangle((w-5)//2, h//2 -100, (w-15)//2, h//2 +100, fill = 'red', outline = '')
+ball1 = can.create_oval((w-100)//2, h//2 - 50, (w-300)//2, h//2 + 50, fill = 'red', outline = '')
+ball2 = can.create_oval((w+100)//2, h//2 - 50, (w+300)//2, h//2 + 50, fill = 'green', outline = '')
+lives1 = 3
+lives2 = 3
+lives1_text = can.create_text(100,50, fill = 'red', font = 'Times 25', text = 'P1 lives: ' + str(lives1))
+lives2_text = can.create_text(w-100,50, fill = 'green', font = 'Times 25', text = 'P2 lives: ' + str(lives2))
+startscreen = can.create_rectangle(0, 0, w, h, fill = 'blue', outline = '')
+titletext = can.create_text(w//2, 50 , fill = 'purple', font = 'Times 75', text = 'P0NG 2P')
+start_butt = can.create_rectangle(w//2-125, h//2-25, w//2+125, h//2+25, fill = 'purple', outline = '')
+start_text1 = can.create_text(w//2-50, h//2, fill = 'red', font = 'Times 30', text = 'START')
+start_text2 = can.create_text(w//2+50, h//2, fill = 'green', font = 'Times 30', text = 'GAME')
+
+def up2(event):
+    x1, y1, x2, y2 = can.coords(rec2)
+    if y1 > 0:
+        dy = min(y1, 20)
+        can.move(rec2, 0, -dy)
+def down2(event):
+    x1, y1, x2, y2 = can.coords(rec2)
+    if h> y2:
+        dy = min(h-y2, 20)
+        can.move(rec2, 0, dy)
+def up1(event):
+    x1, y1, x2, y2 = can.coords(rec1)
+    if y1 > 0:
+        dy = min(y1, 20)
+        can.move(rec1, 0, -dy)
+def down1(event):
+    x1, y1, x2, y2 = can.coords(rec1)
+    if h> y2:
+        dy = min(h-y2, 20)
+        can.move(rec1, 0, dy)
+
+def move_ball1():
+    global dx1, dy1, w, h, lives1
+    bx1, by1, bx2, by2 = can.coords(ball1)
+    rx1, ry1, rx2, ry2 = can.coords(rec1)
+    if bx2 >= (w+5)//2:
+        dx1 = -dx1
+        lives1 -= 1
+        can.itemconfig(lives1_text, text='P1 lives: ' + str(lives1))
+    elif bx1 <= 0:
+        dx1 = -dx1
+    elif rx1 <= bx2 <= (w - 5)//2:
+        center_y = (by1 + by2) // 2
+        if ry1 <= center_y <= ry2:
+            dx1 = -dx1
+    if by2 >= h or by1 <= 0:
+        dy1 = -dy1
+    if lives1 == 0:
+        can.itemconfig(border, fill = 'green')
+    elif lives1 < 0:
+        can.delete(ALL)
+        win2 = can.create_text(w//2, h//2 - 100, fill = 'green', font = 'Times 70', text = 'P2 WINS')
+        r1 = can.create_rectangle(w//2-125, h//2-25, w//2+125, h//2+25, fill = 'purple', outline = '')
+        r2 = can.create_text(w//2, h//2, fill = 'red', font = 'Times 30', text = 'RESTART?')
+        can.tag_bind(r1, '<Button-1>', restart_program)
+        can.tag_bind(r2, '<Button-1>', restart_program)
+    can.move(ball1, dx1, dy1)
+    root.after(10, move_ball1)
+
+def move_ball2():
+    global dx2, dy2, w, h, lives2
+    bx1, by1, bx2, by2 = can.coords(ball2)
+    rx1, ry1, rx2, ry2 = can.coords(rec2)
+    if bx1 <= (w+5)//2:
+        dx2 = -dx2
+        lives2 -= 1
+        can.itemconfig(lives2_text, text = 'P2 lives: ' + str(lives2))
+    elif bx2 >= w:
+        dx2 = -dx2
+    elif rx2 >= bx1 >= (w+5)//2:
+        center_y = (by1 + by2) // 2
+        if ry1 <= center_y <= ry2:
+            dx2 = -dx2
+    if by2 >= h or by1 <= 0:
+        dy2 = -dy2
+    if lives2 == 0:
+        can.itemconfig(border, fill = 'red')
+    elif lives2 < 0:
+        can.delete(ALL)
+        win1 = can.create_text(w//2, h//2 -100, fill = 'red', font = 'Times 70', text = 'P1 WINS')
+        r1 = can.create_rectangle(w // 2 - 125, h // 2 - 25, w // 2 + 125, h // 2 + 25, fill='purple', outline='')
+        r2 = can.create_text(w // 2, h // 2, fill='red', font='Times 30', text='RESTART?')
+        can.tag_bind(r1, '<Button-1>', restart_program)
+        can.tag_bind(r2, '<Button-1>', restart_program)
+    can.move(ball2, dx2, dy2)
+    root.after(10, move_ball2)
+def startgame(event):
+    can.delete(start_butt)
+    can.delete(start_text1)
+    can.delete(start_text2)
+    can.delete(startscreen)
+    can.delete(titletext)
+    move_ball1()
+    move_ball2()
+    root.bind('<w>', up1)
+    root.bind('<s>', down1)
+    root.bind('<Up>', up2)
+    root.bind('<Down>', down2)
+
+
+can.tag_bind(start_butt, "<Button-1>", startgame)
+can.tag_bind(start_butt, "<Button-1>", startgame)
+can.tag_bind(start_text1, "<Button-1>", startgame)
+can.tag_bind(start_text1, "<Button-1>", startgame)
+can.tag_bind(start_text2, "<Button-1>", startgame)
+can.tag_bind(start_text2, "<Button-1>", startgame)
+
+root.mainloop()
