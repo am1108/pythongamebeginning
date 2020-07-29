@@ -1,0 +1,248 @@
+from tkinter import *
+import random
+import math
+import random
+
+root = Tk()
+root.title('Shooting game')
+root.geometry('1500x900')
+w = 1300
+h = 800
+can = Canvas(root, width = w, height = h, bg = 'green')
+border = can.create_rectangle(5, 5, w, h, width = 5, fill = '', outline = 'red')
+can.pack()
+
+a = 0
+gone = True
+
+class enemy:
+    def __init__(self, can, num):
+        self.can = can
+        self.num = num
+        self.all_en = []
+        for i in range(0,num):
+            x1 = random.randrange(1280)
+            y1 = random.randrange(780)
+            x2 = x1+20
+            y2 = y1+20
+            can.create_oval(x1, y1, x2, y2, fill = 'orange', outline = 'red', tag = 'e'+str(i))
+            self.all_en.append('e' + str(i))
+
+
+    def move(self):
+        global gone
+        x, y = ((player.allcoords()[0] + player.allcoords()[2]) / 2), ((player.allcoords()[1] + player.allcoords()[3]) / 2)
+        for e in self.all_en:
+            x1, y1, x2, y2 = can.coords(e)
+            cx = (x1 + x2) / 2
+            cy = (y1 + y2) / 2
+            if not gone:
+                bx1, by1, bx2, by2 = player.get_bullet_coords()
+                bullet = player.get_bullet()
+                if x1 < bx1 < x2 or x1 < bx2 < x2:
+                    if y1 < by2 < y2 or y1 < by1 < y2:
+                        self.can.delete(bullet)
+                        self.can.delete(e)
+                        self.all_en.remove(e)
+                        gone = True
+            move_x = x - cx
+            move_y = y - cy
+            d = (move_x ** 2 + move_y ** 2) ** 0.5
+            theta = math.atan2(move_y, move_x)
+            speed = 1
+            dx = speed * math.cos(theta)
+            dy = speed * math.sin(theta)
+            if 200 <= d <= 300:
+                self.can.move(e, dx / 2, dy / 2)
+            elif 100 <= d < 200:
+                self.can.move(e, dx / 1.5, dy / 1.5)
+            elif 30 <= d < 100:
+                self.can.move(e, dx, dy)
+            elif d < 30:
+                self.e_hit = e
+            elif d > 300:
+                self.can.move(e, dx / 3, dy / 3)
+        root.after(1, self.move)
+
+class player:
+    def __init__(self, can, lives):
+        global gone
+        self.can = can
+        self.r = 0
+        self.g = 250
+        self.b = 0
+        self.id = can.create_oval(w//2-20, h//2-25, w//2+20, h//2+15, fill = 'black', outline = 'black')
+        self.gun = can.create_rectangle(w//2-5, h//2-50, w//2+5, h//2-25, fill = 'grey', outline = 'black')
+        self.fuel_meter = can.create_rectangle(59, h-26, 161, h-4, fill = 'black', outline = 'black', width = 2)
+        self.fuel_text = can.create_text(30, h-15, fill = 'black', font = 'Impact 20', text = 'Fuel: ')
+        c = self.rgb_to_hex((self.r, self.g, self.b))
+        self.fuel_rect = can.create_rectangle(60, h-25, 160, h-5, fill = c)
+        self.lives_text = can.create_text(30, 30, fill = 'black', font = 'Impact 15', text = 'Lives: ' )
+        self.dgun = 'U'
+        self.lives = lives
+        d = 0
+        self.speed = 10
+        for i in range(1, self.lives+1):
+            can.create_rectangle(55+d, 15, 65+d, 35, fill = '#21c704', outline = 'black', tag = 'l' + str(i))
+            d+=15
+        self.can.bind_all('<a>', self.gl)
+        self.can.bind_all('<d>', self.gr)
+        self.can.bind_all('<w>', self.gu)
+        self.can.bind_all('<s>', self.gd)
+        self.can.bind_all('<Motion>', self.move)
+
+        if gone:
+            self.can.bind_all('<Button-1>', self.make_bullet)
+            self.can.bind_all('<ButtonRelease-1>', self.shoot)
+
+    def rgb_to_hex(self, rgb):
+        return "#%02x%02x%02x" % rgb
+
+    def set_fuel(self, f):
+        self.fuel = f
+        self.left = f
+
+    def allcoords(self):
+        return can.coords(self.id)
+
+    def move(self, event):
+        global a
+        x, y = event.x, event.y
+        x1, y1, x2, y2 = can.coords(self.id)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        move_x = x - cx
+        move_y = y - cy
+        theta = math.atan2(move_y, move_x)
+        speed = 5
+        dx = speed * math.cos(theta)
+        dy = speed * math.sin(theta)
+        fx1, fy1, fx2, fy2 = can.coords(self.fuel_rect)
+        rem = fx2 - fx1
+        in_center = x2-10 > x > x1 + 10 and y2-10 > y > y1 + 10
+        if 0 < x < w and 0 < y < h and rem > 1 and not in_center:
+            self.can.move(self.id, dx, dy)
+
+            self.left = ((fx2-fx1)/100)*(self.fuel)
+            fx2 -= (100/self.fuel)
+
+            can.coords(self.fuel_rect, fx1, fy1, fx2, fy2)
+
+            c = self.rgb_to_hex((self.r, self.g, self.b))
+            if a % (self.fuel/100) == 0:
+                if rem >= 50 and self.r <= 250:
+                    self.r += 5
+                    can.itemconfig(self.fuel_rect, fill = c)
+                elif rem < 50 and self.g >= 0:
+                    self.g -= 5
+                    can.itemconfig(self.fuel_rect, fill = c)
+            a += 1
+        if self.dgun == 'L':
+            can.coords(self.gun, x1, cy - 5, x1 - 25, cy + 5)
+        elif self.dgun == 'R':
+            can.coords(self.gun, x2, cy - 5, x2 + 25, cy + 5)
+        elif self.dgun == 'U':
+            can.coords(self.gun, cx - 5, y1, cx + 5, cy - 50)
+        elif self.dgun == 'D':
+            can.coords(self.gun, cx - 5, y2, cx + 5, y2 + 25)
+
+
+    def make_bullet(self, event):
+        global gone
+        x1, y1, x2, y2 = can.coords(self.id)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        if gone:
+            if self.dgun == 'L':
+                self.bullet = can.create_oval(cx - 7, cy - 5, cx + 3, cy + 5, fill='black')
+            elif self.dgun == 'R':
+                self.bullet = can.create_oval(cx - 3, cy - 5, cx + 7, cy + 5, fill='black')
+            elif self.dgun == 'U':
+                self.bullet = can.create_oval(cx - 5, cy - 7, cx + 5, cy + 3, fill='black')
+            elif self.dgun == 'D':
+                self.bullet = can.create_oval(cx - 5, cy - 3, cx + 5, cy + 7, fill='black')
+            gone = False
+            try:
+                if self.after:
+                    root.after_cancel(self.after)
+            except AttributeError:
+                self.after = None
+
+
+
+    def shoot(self, event):
+        global gone
+        x1, y1, x2, y2 = self.can.coords(self.id)
+        pcx = (x1 + x2) / 2
+        pcy = (y1 + y2) / 2
+        try:
+            bx1, by1, bx2, by2 = can.coords(self.bullet)
+            bcx = (bx1 + bx2) / 2
+            bcy = (by1 + by2) / 2
+            if bcx > pcx:
+                self.br()
+            elif bcx < pcx:
+                self.bl()
+            elif bcy > pcy:
+                self.bd()
+            elif bcy < pcy:
+                self.bu()
+            if bx1 < 5 or by1 < 5 or bx2 > w or by2 > h:
+                can.delete(self.bullet)
+                gone = True
+        except ValueError:
+           pass
+        self.after = root.after(1, lambda: self.shoot(event))
+
+
+    def bl(self):
+        self.can.move(self.bullet, -self.speed, 0)
+    def br(self):
+        self.can.move(self.bullet, self.speed, 0)
+    def bu(self):
+        self.can.move(self.bullet, 0, -self.speed)
+    def bd(self):
+        self.can.move(self.bullet, 0, self.speed)
+
+    def get_bullet(self):
+        return self.bullet
+
+    def get_bullet_coords(self):
+        return self.can.coords(self.bullet)
+
+    def gl(self, event):
+        x1, y1, x2, y2 = can.coords(self.id)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        self.dgun = 'L'
+        can.coords(self.gun, x1, cy - 5, x1 - 25, cy + 5)
+
+    def gr(self, event):
+        x1, y1, x2, y2 = can.coords(self.id)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        self.dgun = 'R'
+        can.coords(self.gun, x2, cy - 5, x2 + 25, cy + 5)
+
+    def gu(self, event):
+        x1, y1, x2, y2 = can.coords(self.id)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        self.dgun = 'U'
+        can.coords(self.gun, cx - 5, y1, cx + 5, cy - 50)
+
+    def gd(self, event):
+        x1, y1, x2, y2 = can.coords(self.id)
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        self.dgun = 'D'
+        can.coords(self.gun, cx - 5, y2, cx + 5, y2 + 25)
+
+
+player = player(can, 1)
+
+player.set_fuel(500)
+e = enemy(can, 10)
+e.move()
+
+root.mainloop()
